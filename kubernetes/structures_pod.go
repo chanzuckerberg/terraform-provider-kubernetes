@@ -63,7 +63,7 @@ func flattenPodSpec(in v1.PodSpec) ([]interface{}, error) {
 	}
 
 	if len(in.Tolerations) > 0 {
-		att["tolerations"] = flattenTolerations(in.Tolerations)
+		att["toleration"] = flattenTolerations(in.Tolerations)
 	}
 
 	if len(in.Volumes) > 0 {
@@ -426,7 +426,7 @@ func expandPodSpec(p []interface{}) (*v1.PodSpec, error) {
 		obj.TerminationGracePeriodSeconds = ptrToInt64(int64(v))
 	}
 
-	if v, ok := in["tolerations"].([]interface{}); ok && len(v) > 0 {
+	if v, ok := in["toleration"].([]interface{}); ok && len(v) > 0 {
 		obj.Tolerations = expandTolerations(v)
 	}
 
