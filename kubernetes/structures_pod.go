@@ -136,6 +136,8 @@ func flattenTolerations(tolerations []v1.Toleration) []interface{} {
 		}
 		if v.TolerationSeconds != nil {
 			obj["toleration_seconds"] = *v.TolerationSeconds
+		} else {
+			obj["toleration_seconds"] = -1
 		}
 		if v.Value != "" {
 			obj["value"] = v.Value
@@ -653,8 +655,8 @@ func expandTolerations(tolerations []interface{}) []v1.Toleration {
 		if value, ok := m["operator"]; ok {
 			ts[i].Operator = v1.TolerationOperator(value.(string))
 		}
-		if value, ok := m["toleration_seconds"]; ok {
-			ts[i].TolerationSeconds = ptrToInt64(int64(value.(int)))
+	        if value, ok := m["toleration_seconds"].(int); ok && value >= 0 {
+			ts[i].TolerationSeconds = ptrToInt64(int64(value))
 		}
 		if value, ok := m["value"]; ok {
 			ts[i].Value = value.(string)
