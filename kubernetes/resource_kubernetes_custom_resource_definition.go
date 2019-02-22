@@ -72,7 +72,7 @@ func resourceKubernetesCustomResourceDefinitionRead(d *schema.ResourceData, meta
 		return err
 	}
 	log.Printf("[INFO] Received custom resource definition: %#v", customResourceDefinition)
-	err = d.Set("metadata", flattenMetadata(customResourceDefinition.ObjectMeta))
+	err = d.Set("metadata", flattenMetadata(customResourceDefinition.ObjectMeta, d))
 	if err != nil {
 		return err
 	}
