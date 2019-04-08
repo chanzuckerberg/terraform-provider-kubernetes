@@ -19,6 +19,7 @@ func resourceKubernetesJob() *schema.Resource {
 		Create: resourceKubernetesJobCreate,
 		Read:   resourceKubernetesJobRead,
 		Delete: resourceKubernetesJobDelete,
+		Update: resourceKubernetesJobUpdate,
 		Exists: resourceKubernetesJobExists,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -38,8 +39,6 @@ func resourceKubernetesJob() *schema.Resource {
 		},
 	}
 
-	// HACK(el): Jobs are not updateable
-	s.Schema["metadata"].ForceNew = true
 	return s
 }
 
