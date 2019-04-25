@@ -110,7 +110,7 @@ func useDeprecatedSpecFields(d *schema.ResourceData) (deprecatedSpecFieldsExist 
 }
 
 func resourceKubernetesReplicationControllerCreate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*kubernetes.Clientset)
+	conn := meta.(*kubernetesProvider).conn
 
 	metadata := expandMetadata(d.Get("metadata").([]interface{}))
 
@@ -152,7 +152,7 @@ func resourceKubernetesReplicationControllerCreate(d *schema.ResourceData, meta 
 }
 
 func resourceKubernetesReplicationControllerRead(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*kubernetes.Clientset)
+	conn := meta.(*kubernetesProvider).conn
 
 	namespace, name, err := idParts(d.Id())
 	if err != nil {
@@ -186,7 +186,7 @@ func resourceKubernetesReplicationControllerRead(d *schema.ResourceData, meta in
 }
 
 func resourceKubernetesReplicationControllerUpdate(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*kubernetes.Clientset)
+	conn := meta.(*kubernetesProvider).conn
 
 	namespace, name, err := idParts(d.Id())
 	if err != nil {
@@ -227,7 +227,7 @@ func resourceKubernetesReplicationControllerUpdate(d *schema.ResourceData, meta 
 }
 
 func resourceKubernetesReplicationControllerDelete(d *schema.ResourceData, meta interface{}) error {
-	conn := meta.(*kubernetes.Clientset)
+	conn := meta.(*kubernetesProvider).conn
 
 	namespace, name, err := idParts(d.Id())
 	if err != nil {
@@ -270,7 +270,7 @@ func resourceKubernetesReplicationControllerDelete(d *schema.ResourceData, meta 
 }
 
 func resourceKubernetesReplicationControllerExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	conn := meta.(*kubernetes.Clientset)
+	conn := meta.(*kubernetesProvider).conn
 
 	namespace, name, err := idParts(d.Id())
 	if err != nil {
