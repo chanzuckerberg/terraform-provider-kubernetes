@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/mitchellh/go-homedir"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubernetes "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
@@ -171,8 +172,9 @@ func Provider() terraform.ResourceProvider {
 }
 
 type KubeClientsets struct {
-	MainClientset       *kubernetes.Clientset
-	AggregatorClientset *aggregator.Clientset
+	MainClientset          *kubernetes.Clientset
+	AggregatorClientset    *aggregator.Clientset
+	ApiextensionsClientset *apiextensions.Clientset
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
@@ -244,7 +246,12 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, fmt.Errorf("Failed to configure: %s", err)
 	}
 
-	return &KubeClientsets{k, a}, nil
+	ak, err := apiextensions.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to configure: %s", err)
+	}
+
+	return &KubeClientsets{k, a, ak}, nil
 }
 
 func tryLoadingConfigFile(d *schema.ResourceData) (*restclient.Config, error) {
