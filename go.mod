@@ -36,6 +36,7 @@ require (
 	go.opencensus.io v0.19.0 // indirect
 	google.golang.org/genproto v0.0.0-20190219182410-082222b4a5c5 // indirect
 	k8s.io/api v0.0.0-20181221193117-173ce66c1e39
+	k8s.io/apiextensions-apiserver v0.0.0-20190325193600-475668423e9f
 	k8s.io/apimachinery v0.0.0-20190210215030-4521e64aecd3
 	k8s.io/client-go v10.0.0+incompatible
 	sigs.k8s.io/structured-merge-diff v0.0.0-20190130003954-e5e029740eb8 // indirect
