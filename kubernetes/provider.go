@@ -144,29 +144,30 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"kubernetes_cluster_role":              resourceKubernetesClusterRole(),
-			"kubernetes_cluster_role_binding":      resourceKubernetesClusterRoleBinding(),
-			"kubernetes_config_map":                resourceKubernetesConfigMap(),
-			"kubernetes_daemonset":                 resourceKubernetesDaemonSet(),
-			"kubernetes_deployment":                resourceKubernetesDeployment(),
-			"kubernetes_endpoints":                 resourceKubernetesEndpoints(),
-			"kubernetes_horizontal_pod_autoscaler": resourceKubernetesHorizontalPodAutoscaler(),
-			"kubernetes_ingress":                   resourceKubernetesIngress(),
-			"kubernetes_limit_range":               resourceKubernetesLimitRange(),
-			"kubernetes_namespace":                 resourceKubernetesNamespace(),
-			"kubernetes_network_policy":            resourceKubernetesNetworkPolicy(),
-			"kubernetes_persistent_volume":         resourceKubernetesPersistentVolume(),
-			"kubernetes_persistent_volume_claim":   resourceKubernetesPersistentVolumeClaim(),
-			"kubernetes_pod":                       resourceKubernetesPod(),
-			"kubernetes_replication_controller":    resourceKubernetesReplicationController(),
-			"kubernetes_role_binding":              resourceKubernetesRoleBinding(),
-			"kubernetes_resource_quota":            resourceKubernetesResourceQuota(),
-			"kubernetes_role":                      resourceKubernetesRole(),
-			"kubernetes_secret":                    resourceKubernetesSecret(),
-			"kubernetes_service":                   resourceKubernetesService(),
-			"kubernetes_service_account":           resourceKubernetesServiceAccount(),
-			"kubernetes_stateful_set":              resourceKubernetesStatefulSet(),
-			"kubernetes_storage_class":             resourceKubernetesStorageClass(),
+			"kubernetes_cluster_role":               resourceKubernetesClusterRole(),
+			"kubernetes_cluster_role_binding":       resourceKubernetesClusterRoleBinding(),
+			"kubernetes_config_map":                 resourceKubernetesConfigMap(),
+			"kubernetes_custom_resource_definition": resourceKubernetesCustomResourceDefinition(),
+			"kubernetes_daemonset":                  resourceKubernetesDaemonSet(),
+			"kubernetes_deployment":                 resourceKubernetesDeployment(),
+			"kubernetes_endpoints":                  resourceKubernetesEndpoints(),
+			"kubernetes_horizontal_pod_autoscaler":  resourceKubernetesHorizontalPodAutoscaler(),
+			"kubernetes_ingress":                    resourceKubernetesIngress(),
+			"kubernetes_limit_range":                resourceKubernetesLimitRange(),
+			"kubernetes_namespace":                  resourceKubernetesNamespace(),
+			"kubernetes_network_policy":             resourceKubernetesNetworkPolicy(),
+			"kubernetes_persistent_volume":          resourceKubernetesPersistentVolume(),
+			"kubernetes_persistent_volume_claim":    resourceKubernetesPersistentVolumeClaim(),
+			"kubernetes_pod":                        resourceKubernetesPod(),
+			"kubernetes_replication_controller":     resourceKubernetesReplicationController(),
+			"kubernetes_role_binding":               resourceKubernetesRoleBinding(),
+			"kubernetes_resource_quota":             resourceKubernetesResourceQuota(),
+			"kubernetes_role":                       resourceKubernetesRole(),
+			"kubernetes_secret":                     resourceKubernetesSecret(),
+			"kubernetes_service":                    resourceKubernetesService(),
+			"kubernetes_service_account":            resourceKubernetesServiceAccount(),
+			"kubernetes_stateful_set":               resourceKubernetesStatefulSet(),
+			"kubernetes_storage_class":              resourceKubernetesStorageClass(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -236,8 +237,14 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, fmt.Errorf("Failed to configure: %s", err)
 	}
 
+	ak, err := apiextensions.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to configure: %s", err)
+	}
+
 	providerInstance := &kubernetesProvider{
-		conn: k,
+		conn:              k,
+		apiextensionsConn: ak,
 	}
 
 	return providerInstance, nil
