@@ -1,10 +1,11 @@
 package kubernetes
 
 import (
+	"github.com/hashicorp/terraform/helper/schema"
 	"k8s.io/api/batch/v1beta1"
 )
 
-func flattenCronJobSpec(in v1beta1.CronJobSpec) ([]interface{}, error) {
+func flattenCronJobSpec(in v1beta1.CronJobSpec, d *schema.ResourceData) ([]interface{}, error) {
 	att := make(map[string]interface{})
 
 	att["concurrency_policy"] = in.ConcurrencyPolicy
@@ -16,7 +17,7 @@ func flattenCronJobSpec(in v1beta1.CronJobSpec) ([]interface{}, error) {
 
 	att["schedule"] = in.Schedule
 
-	jobTemplate, err := flattenJobTemplate(in.JobTemplate)
+	jobTemplate, err := flattenJobTemplate(in.JobTemplate, d)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +38,13 @@ func flattenCronJobSpec(in v1beta1.CronJobSpec) ([]interface{}, error) {
 	return []interface{}{att}, nil
 }
 
-func flattenJobTemplate(in v1beta1.JobTemplateSpec) ([]interface{}, error) {
+func flattenJobTemplate(in v1beta1.JobTemplateSpec, d *schema.ResourceData) ([]interface{}, error) {
 	att := make(map[string]interface{})
 
-	meta := flattenMetadata(in.ObjectMeta)
+	meta := flattenMetadata(in.ObjectMeta, d)
 	att["metadata"] = meta
 
-	jobSpec, err := flattenJobSpec(in.Spec)
+	jobSpec, err := flattenJobSpec(in.Spec, d)
 	if err != nil {
 		return nil, err
 	}
