@@ -11,6 +11,15 @@ func podSpecFields(isUpdatable, isDeprecated, isComputed bool) map[string]*schem
 		deprecatedMessage = "This field is deprecated because template was incorrectly defined as a PodSpec preventing the definition of metadata. Please use the one under the spec field"
 	}
 	s := map[string]*schema.Schema{
+		"affinity": {
+			Type:        schema.TypeList,
+			Optional:    true,
+			MaxItems:    1,
+			Description: "Optional pod scheduling constraints.",
+			Elem: &schema.Resource{
+				Schema: affinityFields(),
+			},
+		},
 		"active_deadline_seconds": {
 			Type:         schema.TypeInt,
 			Optional:     true,
@@ -201,6 +210,11 @@ func podSpecFields(isUpdatable, isDeprecated, isComputed bool) map[string]*schem
 					"fs_group": {
 						Type:        schema.TypeInt,
 						Description: "A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod: 1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw---- If unset, the Kubelet will not modify the ownership and permissions of any volume.",
+						Optional:    true,
+					},
+					"run_as_group": {
+						Type:        schema.TypeInt,
+						Description: "The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container.",
 						Optional:    true,
 					},
 					"run_as_non_root": {

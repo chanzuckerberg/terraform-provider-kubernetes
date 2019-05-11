@@ -18,6 +18,10 @@ func flattenPodSpec(in v1.PodSpec) ([]interface{}, error) {
 		att["active_deadline_seconds"] = *in.ActiveDeadlineSeconds
 	}
 
+	if in.Affinity != nil {
+		att["affinity"] = flattenAffinity(in.Affinity)
+	}
+
 	containers, err := flattenContainers(in.Containers)
 	if err != nil {
 		return nil, err
@@ -132,6 +136,9 @@ func flattenPodSecurityContext(in *v1.PodSecurityContext) []interface{} {
 
 	if in.FSGroup != nil {
 		att["fs_group"] = *in.FSGroup
+	}
+	if in.RunAsGroup != nil {
+		att["run_as_group"] = *in.RunAsGroup
 	}
 	if in.RunAsNonRoot != nil {
 		att["run_as_non_root"] = *in.RunAsNonRoot
@@ -415,6 +422,14 @@ func expandPodSpec(p []interface{}) (*v1.PodSpec, error) {
 		obj.ActiveDeadlineSeconds = ptrToInt64(int64(v))
 	}
 
+	if v, ok := in["affinity"].([]interface{}); ok && len(v) > 0 {
+		a, err := expandAffinity(v)
+		if err != nil {
+			return obj, err
+		}
+		obj.Affinity = a
+	}
+
 	if v, ok := in["container"].([]interface{}); ok && len(v) > 0 {
 		cs, err := expandContainers(v)
 		if err != nil {
@@ -576,6 +591,9 @@ func expandPodSecurityContext(l []interface{}) *v1.PodSecurityContext {
 	obj := &v1.PodSecurityContext{}
 	if v, ok := in["fs_group"].(int); ok {
 		obj.FSGroup = ptrToInt64(int64(v))
+	}
+	if v, ok := in["run_as_group"].(int); ok {
+		obj.RunAsGroup = ptrToInt64(int64(v))
 	}
 	if v, ok := in["run_as_non_root"].(bool); ok {
 		obj.RunAsNonRoot = ptrToBool(v)
