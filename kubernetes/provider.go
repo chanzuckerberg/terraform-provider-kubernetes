@@ -9,11 +9,13 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/mitchellh/go-homedir"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	kubernetes "k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	aggregator "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -138,35 +140,42 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"kubernetes_cluster_role":              resourceKubernetesClusterRole(),
-			"kubernetes_cluster_role_binding":      resourceKubernetesClusterRoleBinding(),
-			"kubernetes_config_map":                resourceKubernetesConfigMap(),
-			"kubernetes_cron_job":                  resourceKubernetesCronJob(),
-			"kubernetes_daemonset":                 resourceKubernetesDaemonSet(),
-			"kubernetes_deployment":                resourceKubernetesDeployment(),
-			"kubernetes_endpoints":                 resourceKubernetesEndpoints(),
-			"kubernetes_horizontal_pod_autoscaler": resourceKubernetesHorizontalPodAutoscaler(),
-			"kubernetes_ingress":                   resourceKubernetesIngress(),
-			"kubernetes_job":                       resourceKubernetesJob(),
-			"kubernetes_limit_range":               resourceKubernetesLimitRange(),
-			"kubernetes_namespace":                 resourceKubernetesNamespace(),
-			"kubernetes_network_policy":            resourceKubernetesNetworkPolicy(),
-			"kubernetes_persistent_volume":         resourceKubernetesPersistentVolume(),
-			"kubernetes_persistent_volume_claim":   resourceKubernetesPersistentVolumeClaim(),
-			"kubernetes_pod":                       resourceKubernetesPod(),
-			"kubernetes_pod_disruption_budget":     resourceKubernetesPodDisruptionBudget(),
-			"kubernetes_replication_controller":    resourceKubernetesReplicationController(),
-			"kubernetes_role_binding":              resourceKubernetesRoleBinding(),
-			"kubernetes_resource_quota":            resourceKubernetesResourceQuota(),
-			"kubernetes_role":                      resourceKubernetesRole(),
-			"kubernetes_secret":                    resourceKubernetesSecret(),
-			"kubernetes_service":                   resourceKubernetesService(),
-			"kubernetes_service_account":           resourceKubernetesServiceAccount(),
-			"kubernetes_stateful_set":              resourceKubernetesStatefulSet(),
-			"kubernetes_storage_class":             resourceKubernetesStorageClass(),
+			"kubernetes_cluster_role":               resourceKubernetesClusterRole(),
+			"kubernetes_cluster_role_binding":       resourceKubernetesClusterRoleBinding(),
+			"kubernetes_config_map":                 resourceKubernetesConfigMap(),
+			"kubernetes_cron_job":                   resourceKubernetesCronJob(),
+			"kubernetes_custom_resource_definition": resourceKubernetesCustomResourceDefinition(),
+			"kubernetes_daemonset":                  resourceKubernetesDaemonSet(),
+			"kubernetes_deployment":                 resourceKubernetesDeployment(),
+			"kubernetes_endpoints":                  resourceKubernetesEndpoints(),
+			"kubernetes_horizontal_pod_autoscaler":  resourceKubernetesHorizontalPodAutoscaler(),
+			"kubernetes_ingress":                    resourceKubernetesIngress(),
+			"kubernetes_job":                        resourceKubernetesJob(),
+			"kubernetes_limit_range":                resourceKubernetesLimitRange(),
+			"kubernetes_namespace":                  resourceKubernetesNamespace(),
+			"kubernetes_network_policy":             resourceKubernetesNetworkPolicy(),
+			"kubernetes_persistent_volume":          resourceKubernetesPersistentVolume(),
+			"kubernetes_persistent_volume_claim":    resourceKubernetesPersistentVolumeClaim(),
+			"kubernetes_pod":                        resourceKubernetesPod(),
+			"kubernetes_pod_disruption_budget":      resourceKubernetesPodDisruptionBudget(),
+			"kubernetes_replication_controller":     resourceKubernetesReplicationController(),
+			"kubernetes_role_binding":               resourceKubernetesRoleBinding(),
+			"kubernetes_resource_quota":             resourceKubernetesResourceQuota(),
+			"kubernetes_role":                       resourceKubernetesRole(),
+			"kubernetes_secret":                     resourceKubernetesSecret(),
+			"kubernetes_service":                    resourceKubernetesService(),
+			"kubernetes_service_account":            resourceKubernetesServiceAccount(),
+			"kubernetes_stateful_set":               resourceKubernetesStatefulSet(),
+			"kubernetes_storage_class":              resourceKubernetesStorageClass(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
+}
+
+type KubeClientsets struct {
+	MainClientset          *kubernetes.Clientset
+	AggregatorClientset    *aggregator.Clientset
+	ApiextensionsClientset *apiextensions.Clientset
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
@@ -233,7 +242,17 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, fmt.Errorf("Failed to configure: %s", err)
 	}
 
-	return k, nil
+	a, err := aggregator.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to configure: %s", err)
+	}
+
+	ak, err := apiextensions.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to configure: %s", err)
+	}
+
+	return &KubeClientsets{k, a, ak}, nil
 }
 
 func tryLoadingConfigFile(d *schema.ResourceData) (*restclient.Config, error) {
