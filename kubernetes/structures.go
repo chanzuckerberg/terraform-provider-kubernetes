@@ -115,12 +115,20 @@ func flattenMetadata(meta metav1.ObjectMeta, d *schema.ResourceData, metaPrefix 
 	if len(metaPrefix) > 0 {
 		prefix = metaPrefix[0]
 	}
-	configAnnotations := d.Get(prefix + "metadata.0.annotations").(map[string]interface{})
+	untypedConfigAnnotations := d.Get(prefix + "metadata.0.annotations")
+	configAnnotations := make(map[string]interface{})
+	if untypedConfigAnnotations != nil {
+		configAnnotations = untypedConfigAnnotations.(map[string]interface{})
+	}
 	m["annotations"] = removeInternalKeys(meta.Annotations, configAnnotations)
 	if meta.GenerateName != "" {
 		m["generate_name"] = meta.GenerateName
 	}
-	configLabels := d.Get(prefix + "metadata.0.labels").(map[string]interface{})
+	untypedConfigLabels := d.Get(prefix + "metadata.0.labels")
+	configLabels := make(map[string]interface{})
+	if untypedConfigLabels != nil {
+		configLabels = untypedConfigLabels.(map[string]interface{})
+	}
 	m["labels"] = removeInternalKeys(meta.Labels, configLabels)
 	m["name"] = meta.Name
 	m["resource_version"] = meta.ResourceVersion
