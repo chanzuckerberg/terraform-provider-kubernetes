@@ -242,6 +242,9 @@ func flattenVolumes(volumes []v1.Volume) ([]interface{}, error) {
 		if v.Secret != nil {
 			obj["secret"] = flattenSecretVolumeSource(v.Secret)
 		}
+		if v.Projected != nil {
+			obj["projected"] = flattenProjectedVolumeSource(v.Projected)
+		}
 		if v.GCEPersistentDisk != nil {
 			obj["gce_persistent_disk"] = flattenGCEPersistentDiskVolumeSource(v.GCEPersistentDisk)
 		}
@@ -323,6 +326,89 @@ func flattenGitRepoVolumeSource(in *v1.GitRepoVolumeSource) []interface{} {
 	return []interface{}{att}
 }
 
+func flattenProjectedVolumeSource(in *v1.ProjectedVolumeSource) []interface{} {
+	att := make(map[string]interface{})
+	if in.DefaultMode != nil {
+		att["default_mode"] = "0" + strconv.FormatInt(int64(*in.DefaultMode), 8)
+	}
+	if len(in.Sources) > 0 {
+		att["sources"] = flattenVolumeProjection(in.Sources)
+	}
+	return []interface{}{att}
+}
+
+func flattenVolumeProjection(in []v1.VolumeProjection) []interface{} {
+	att := make([]interface{}, len(in))
+	for i, v := range in {
+		m := map[string]interface{}{}
+		if v.ConfigMap != nil {
+			m["config_map"] = flattenConfigMapProjection(v.ConfigMap)
+		}
+		if v.DownwardAPI != nil {
+			m["downward_api"] = flattenDownwardAPIProjection(v.DownwardAPI)
+		}
+		if v.Secret != nil {
+			m["secret"] = flattenSecretProjection(v.Secret)
+		}
+		if v.ServiceAccountToken != nil {
+			m["service_account_token"] = flattenServiceAccountTokenProjection(v.ServiceAccountToken)
+		}
+		att[i] = m
+	}
+	return att
+}
+
+func flattenConfigMapProjection(in *v1.ConfigMapProjection) []interface{} {
+	att := make(map[string]interface{})
+	att["name"] = in.Name
+
+	if len(in.Items) > 0 {
+		att["items"] = flattenKeyToPath(in.Items)
+	}
+
+	if in.Optional != nil {
+		att["optional"] = *in.Optional
+	}
+	return []interface{}{att}
+}
+
+func flattenDownwardAPIProjection(in *v1.DownwardAPIProjection) []interface{} {
+	att := make(map[string]interface{})
+
+	if len(in.Items) > 0 {
+		att["items"] = flattenDownwardAPIVolumeFile(in.Items)
+	}
+	return []interface{}{att}
+}
+
+func flattenSecretProjection(in *v1.SecretProjection) []interface{} {
+	att := make(map[string]interface{})
+	att["name"] = in.Name
+
+	if len(in.Items) > 0 {
+		att["items"] = flattenKeyToPath(in.Items)
+	}
+
+	if in.Optional != nil {
+		att["optional"] = *in.Optional
+	}
+	return []interface{}{att}
+}
+
+func flattenServiceAccountTokenProjection(in *v1.ServiceAccountTokenProjection) []interface{} {
+	att := make(map[string]interface{})
+	if in.Audience != "" {
+		att["audience"] = in.Audience
+	}
+	if in.ExpirationSeconds != nil {
+		att["expiration_seconds"] = *in.ExpirationSeconds
+	}
+	if in.Path != "" {
+		att["path"] = in.Path
+	}
+	return []interface{}{att}
+}
+
 func flattenDownwardAPIVolumeSource(in *v1.DownwardAPIVolumeSource) []interface{} {
 	att := make(map[string]interface{})
 	if in.DefaultMode != nil {
@@ -355,6 +441,24 @@ func flattenDownwardAPIVolumeFile(in []v1.DownwardAPIVolumeFile) []interface{} {
 	return att
 }
 
+func flattenKeyToPath(in []v1.KeyToPath) []interface{} {
+	att := make([]interface{}, len(in))
+	for i, v := range in {
+		m := map[string]interface{}{}
+		if v.Key != "" {
+			m["key"] = v.Key
+		}
+		if v.Mode != nil {
+			m["mode"] = "0" + strconv.FormatInt(int64(*v.Mode), 8)
+		}
+		if v.Path != "" {
+			m["path"] = v.Path
+		}
+		att[i] = m
+	}
+	return []interface{}{att}
+}
+
 func flattenConfigMapVolumeSource(in *v1.ConfigMapVolumeSource) []interface{} {
 	att := make(map[string]interface{})
 	if in.DefaultMode != nil {
@@ -362,21 +466,7 @@ func flattenConfigMapVolumeSource(in *v1.ConfigMapVolumeSource) []interface{} {
 	}
 	att["name"] = in.Name
 	if len(in.Items) > 0 {
-		items := make([]interface{}, len(in.Items))
-		for i, v := range in.Items {
-			m := map[string]interface{}{}
-			if v.Key != "" {
-				m["key"] = v.Key
-			}
-			if v.Mode != nil {
-				m["mode"] = "0" + strconv.FormatInt(int64(*v.Mode), 8)
-			}
-			if v.Path != "" {
-				m["path"] = v.Path
-			}
-			items[i] = m
-		}
-		att["items"] = items
+		att["items"] = flattenKeyToPath(in.Items)
 	}
 
 	return []interface{}{att}
@@ -397,17 +487,7 @@ func flattenSecretVolumeSource(in *v1.SecretVolumeSource) []interface{} {
 		att["secret_name"] = in.SecretName
 	}
 	if len(in.Items) > 0 {
-		items := make([]interface{}, len(in.Items))
-		for i, v := range in.Items {
-			m := map[string]interface{}{}
-			m["key"] = v.Key
-			if v.Mode != nil {
-				m["mode"] = "0" + strconv.FormatInt(int64(*v.Mode), 8)
-			}
-			m["path"] = v.Path
-			items[i] = m
-		}
-		att["items"] = items
+		att["items"] = flattenKeyToPath(in.Items)
 	}
 	if in.Optional != nil {
 		att["optional"] = *in.Optional
@@ -730,6 +810,142 @@ func expandConfigMapVolumeSource(l []interface{}) (*v1.ConfigMapVolumeSource, er
 	return obj, nil
 }
 
+func expandProjectedVolumeSource(l [] interface{}) (*v1.ProjectedVolumeSource, error) {
+	obj := &v1.ProjectedVolumeSource{}
+	if len(l) == 0 || l[0] == nil {
+		return obj, nil
+	}
+
+	in := l[0].(map[string]interface{})
+
+	if mode, ok := in["default_mode"].(string); ok && len(mode) > 0 {
+		v, err := strconv.ParseInt(mode, 8, 32)
+		if err != nil {
+			return obj, fmt.Errorf("Projected volume: failed to parse 'default_mode' value: %s", err)
+		}
+		obj.DefaultMode = ptrToInt32(int32(v))
+	}
+
+	if v, ok := in["sources"].([]interface{}); ok && len(v) > 0 {
+		var err error
+		obj.Sources, err = expandVolumeProjection(v)
+		if err != nil {
+			return obj, err
+		}
+	}
+	return obj, nil
+}
+
+func expandConfigMapProjection(l []interface{}) *v1.ConfigMapProjection {
+	obj := &v1.ConfigMapProjection{}
+	if len(l) == 0 || l[0] == nil {
+		return obj
+	}
+	in := l[0].(map[string]interface{})
+
+	if v, ok := in["name"].(string); ok {
+		obj.Name = v
+	}
+
+	if v, ok := in["items"].([]interface{}); ok && len(v) > 0 {
+		obj.Items = expandKeyPath(v)
+	}
+
+	if opt, ok := in["optional"].(bool); ok {
+		obj.Optional = ptrToBool(opt)
+	}
+
+	return obj
+}
+
+func expandDownwardAPIProjection(l []interface{}) (*v1.DownwardAPIProjection, error) {
+	obj := &v1.DownwardAPIProjection{}
+	if len(l) == 0 || l[0] == nil {
+		return obj, nil
+	}
+	in := l[0].(map[string]interface{})
+
+	if v, ok := in["items"].([]interface{}); ok && len(v) > 0 {
+		var err error
+		obj.Items, err = expandDownwardAPIVolumeFile(v)
+		if err != nil {
+			return obj, err
+		}
+	}
+	return obj, nil
+}
+
+func expandSecretProjection(l []interface{}) *v1.SecretProjection {
+	obj := &v1.SecretProjection{}
+	if len(l) == 0 || l[0] == nil {
+		return obj
+	}
+	in := l[0].(map[string]interface{})
+
+	if v, ok := in["name"].(string); ok {
+		obj.Name = v
+	}
+
+	if v, ok := in["items"].([]interface{}); ok && len(v) > 0 {
+		obj.Items = expandKeyPath(v)
+	}
+
+	if opt, ok := in["optional"].(bool); ok {
+		obj.Optional = ptrToBool(opt)
+	}
+
+	return obj
+}
+
+
+func expandServiceAccountTokenProjection(l []interface{}) *v1.ServiceAccountTokenProjection {
+	obj := &v1.ServiceAccountTokenProjection{}
+	if len(l) == 0 || l[0] == nil {
+		return obj
+	}
+	in := l[0].(map[string]interface{})
+
+	if v, ok := in["audience"].(string); ok {
+		obj.Audience = v
+	}
+
+	if v, ok := in["expiration_seconds"].(int); ok {
+		obj.ExpirationSeconds = ptrToInt64(int64(v))
+	}
+
+	if v, ok := in["path"].(string); ok {
+		obj.Path = v
+	}
+	return obj
+}
+
+func expandVolumeProjection(in []interface{}) ([]v1.VolumeProjection, error) {
+	var err error
+	if len(in) == 0 {
+		return []v1.VolumeProjection{}, nil
+	}
+	vp := make([]v1.VolumeProjection, len(in))
+	for i, c := range in {
+		p := c.(map[string]interface{})
+		if v, ok := p["config_map"].([]interface{}); ok && len(v) > 0 {
+			vp[i].ConfigMap = expandConfigMapProjection(v)
+		}
+		if v, ok := p["downward_api"].([]interface{}); ok && len(v) > 0 {
+			vp[i].DownwardAPI, err = expandDownwardAPIProjection(v)
+			if err != nil {
+				return vp, err
+			}
+		}
+		if v, ok := p["secret"].([]interface{}); ok && len(v) > 0 {
+			vp[i].Secret = expandSecretProjection(v)
+		}
+		if v, ok := p["config_map"].([]interface{}); ok && len(v) > 0 {
+			vp[i].ServiceAccountToken = expandServiceAccountTokenProjection(v)
+		}
+	}
+	return vp, nil
+}
+
 func expandDownwardAPIVolumeSource(l []interface{}) (*v1.DownwardAPIVolumeSource, error) {
 	obj := &v1.DownwardAPIVolumeSource{}
 	if len(l) == 0 || l[0] == nil {
@@ -888,6 +1104,13 @@ func expandVolumes(volumes []interface{}) ([]v1.Volume, error) {
 		if value, ok := m["downward_api"].([]interface{}); ok && len(value) > 0 {
 			var err error
 			vl[i].DownwardAPI, err = expandDownwardAPIVolumeSource(value)
+			if err != nil {
+				return vl, err
+			}
+		}
+		if value, ok := m["projected"].([]interface{}); ok && len(value) > 0 {
+			var err error
+			vl[i].Projected, err = expandProjectedVolumeSource(value)
 			if err != nil {
 				return vl, err
 			}

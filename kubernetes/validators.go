@@ -181,6 +181,16 @@ func validatePositiveInteger(value interface{}, key string) (ws []string, es []e
 	return
 }
 
+func validatePositiveIntegerWithMinimum(minimum int) schema.SchemaValidateFunc {
+	return func(value interface{}, k string) (ws []string, es []error) {
+		v := value.(int)
+		if v < minimum {
+			es = append(es, fmt.Errorf("%s must be greater than %s", k, minimum))
+		}
+		return	
+	}
+}
+
 func validateDNSPolicy(value interface{}, key string) (ws []string, es []error) {
 	v := value.(string)
 	if v != "ClusterFirst" && v != "Default" {

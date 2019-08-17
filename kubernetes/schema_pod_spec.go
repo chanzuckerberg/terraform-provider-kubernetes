@@ -354,6 +354,93 @@ func defaultIfNotComputed(isComputed bool, defaultValue interface{}) interface{}
 	return defaultValue
 }
 
+func keyToPathSchema() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The key to project.",
+			},
+			"mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  `Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.`,
+				ValidateFunc: validateModeBits,
+			},
+			"path": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateAttributeValueDoesNotContain(".."),
+				Description:  `The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.`,
+			},
+		},
+	}
+}
+
+func downwardAPIVolumeFileSchema() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"field_ref": {
+				Type:        schema.TypeList,
+				Required:    true,
+				MaxItems:    1,
+				Description: "Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"api_version": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "v1",
+							Description: `Version of the schema the FieldPath is written in terms of, defaults to "v1".`,
+						},
+						"field_path": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Path of the field to select in the specified API version",
+						},
+					},
+				},
+			},
+			"mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  `Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.`,
+				ValidateFunc: validateModeBits,
+			},
+			"path": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validateAttributeValueDoesNotContain(".."),
+				Description:  `Path is the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'`,
+			},
+			"resource_field_ref": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"container_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"quantity": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"resource": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Resource to select",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func volumeSchema() *schema.Resource {
 	v := commonVolumeSources()
 
@@ -368,27 +455,7 @@ func volumeSchema() *schema.Resource {
 					Type:        schema.TypeList,
 					Description: `If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error. Paths must be relative and may not contain the '..' path or start with '..'.`,
 					Optional:    true,
-					Elem: &schema.Resource{
-						Schema: map[string]*schema.Schema{
-							"key": {
-								Type:        schema.TypeString,
-								Optional:    true,
-								Description: "The key to project.",
-							},
-							"mode": {
-								Type:         schema.TypeString,
-								Optional:     true,
-								Description:  `Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.`,
-								ValidateFunc: validateModeBits,
-							},
-							"path": {
-								Type:         schema.TypeString,
-								Optional:     true,
-								ValidateFunc: validateAttributeValueDoesNotContain(".."),
-								Description:  `The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.`,
-							},
-						},
-					},
+					Elem: 		 keyToPathSchema(),
 				},
 				"default_mode": {
 					Type:         schema.TypeString,
@@ -450,66 +517,7 @@ func volumeSchema() *schema.Resource {
 					Type:        schema.TypeList,
 					Description: `If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error. Paths must be relative and may not contain the '..' path or start with '..'.`,
 					Optional:    true,
-					Elem: &schema.Resource{
-						Schema: map[string]*schema.Schema{
-							"field_ref": {
-								Type:        schema.TypeList,
-								Required:    true,
-								MaxItems:    1,
-								Description: "Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.",
-								Elem: &schema.Resource{
-									Schema: map[string]*schema.Schema{
-										"api_version": {
-											Type:        schema.TypeString,
-											Optional:    true,
-											Default:     "v1",
-											Description: `Version of the schema the FieldPath is written in terms of, defaults to "v1".`,
-										},
-										"field_path": {
-											Type:        schema.TypeString,
-											Optional:    true,
-											Description: "Path of the field to select in the specified API version",
-										},
-									},
-								},
-							},
-							"mode": {
-								Type:         schema.TypeString,
-								Optional:     true,
-								Description:  `Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.`,
-								ValidateFunc: validateModeBits,
-							},
-							"path": {
-								Type:         schema.TypeString,
-								Required:     true,
-								ValidateFunc: validateAttributeValueDoesNotContain(".."),
-								Description:  `Path is the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'`,
-							},
-							"resource_field_ref": {
-								Type:        schema.TypeList,
-								Optional:    true,
-								MaxItems:    1,
-								Description: "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.",
-								Elem: &schema.Resource{
-									Schema: map[string]*schema.Schema{
-										"container_name": {
-											Type:     schema.TypeString,
-											Required: true,
-										},
-										"quantity": {
-											Type:     schema.TypeString,
-											Optional: true,
-										},
-										"resource": {
-											Type:        schema.TypeString,
-											Required:    true,
-											Description: "Resource to select",
-										},
-									},
-								},
-							},
-						},
-					},
+					Elem: 		 downwardAPIVolumeFileSchema(),
 				},
 			},
 		},
@@ -573,27 +581,7 @@ func volumeSchema() *schema.Resource {
 					Type:        schema.TypeList,
 					Description: "If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.",
 					Optional:    true,
-					Elem: &schema.Resource{
-						Schema: map[string]*schema.Schema{
-							"key": {
-								Type:        schema.TypeString,
-								Optional:    true,
-								Description: "The key to project.",
-							},
-							"mode": {
-								Type:         schema.TypeString,
-								Optional:     true,
-								Description:  "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
-								ValidateFunc: validateModeBits,
-							},
-							"path": {
-								Type:         schema.TypeString,
-								Optional:     true,
-								ValidateFunc: validateAttributeValueDoesNotContain(".."),
-								Description:  "The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.",
-							},
-						},
-					},
+					Elem: 		 keyToPathSchema(),
 				},
 				"optional": {
 					Type:        schema.TypeBool,
@@ -604,6 +592,128 @@ func volumeSchema() *schema.Resource {
 					Type:        schema.TypeString,
 					Description: "Name of the secret in the pod's namespace to use. More info: http://kubernetes.io/docs/user-guide/volumes#secrets",
 					Optional:    true,
+				},
+			},
+		},
+	}
+
+	v["projected"] = &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "Secret represents a secret that should populate this volume. More info: http://kubernetes.io/docs/user-guide/volumes#secrets",
+		Optional:    true,
+		MaxItems:    1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"default_mode": {
+					Type:         schema.TypeString,
+					Description:  "Mode bits to use on created files by default.  Must be a value between 0 and 0777. Defaults to 0644. Directories within the path are not affected by this setting. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+					Optional:     true,
+					Default:      "0644",
+					ValidateFunc: validateModeBits,
+				},
+				"sources": {
+					Type:        schema.TypeList,
+					Description: "list of volume projections",
+					MaxItems:    1,
+					Optional:    true,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							"config_map": {
+								Type:        schema.TypeList,
+								Optional:    true,
+								MaxItems:    1,
+								Description: "The key to project.",
+								Elem: 		 &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"items": {
+											Type:        schema.TypeList,
+											Description: "If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.",
+											Optional:    true,
+											Elem: 		 keyToPathSchema(),
+										},
+										"name": {
+											Type:        schema.TypeString,
+											Description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+											Optional:    true,
+										},
+										"optional": {
+											Type:        schema.TypeBool,
+											Description: "Specify whether the ConfigMap or it's keys must be defined",
+											Optional:    true,
+										},
+									},
+								},
+							},
+							"downward_api": {
+								Type:        schema.TypeList,
+								Optional:    true,
+								MaxItems:    1,
+								Description: "Optional: mode bits to use on this file, must be a value between 0 and 0777. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
+								Elem:		 &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"items": {
+											Type:        schema.TypeList,
+											Description: "Items is a list of DownwardAPIVolume file",
+											Optional:    true,
+											Elem: 		 downwardAPIVolumeFileSchema(),
+										},
+									},
+								},
+							},
+							"secret": {
+								Type:        schema.TypeList,
+								Optional:    true,
+								MaxItems:    1,
+								Description: "The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.",
+								Elem: 		 &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"items": {
+											Type:        schema.TypeList,
+											Description: "If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.",
+											Optional:    true,
+											Elem: 		 keyToPathSchema(),
+										},
+										"name": {
+											Type:        schema.TypeString,
+											Description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+											Optional:    true,
+										},
+										"optional": {
+											Type:        schema.TypeBool,
+											Description: "Specify whether the ConfigMap or it's keys must be defined",
+											Optional:    true,
+										},
+									},
+								},
+							},
+							"service_account_token": {
+								Type:        schema.TypeList,
+								Optional:    true,
+								MaxItems:    1,
+								Description: "The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.",
+								Elem: 		 &schema.Resource{
+									Schema: map[string]*schema.Schema{
+										"audience": {
+											Type:        schema.TypeString,
+											Description: "Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.",
+											Optional:    true,
+										},
+										"expiration_seconds": {
+											Type:         schema.TypeInt,
+											Description:  "ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.",
+											ValidateFunc: validatePositiveIntegerWithMinimum(10),
+											Optional:     true,
+										},
+										"path": {
+											Type:        schema.TypeString,
+											Description: "Path is the path relative to the mount point of the file to project the token into.",
+											Optional:    true,
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
