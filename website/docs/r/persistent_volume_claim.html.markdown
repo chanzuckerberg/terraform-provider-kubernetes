@@ -85,7 +85,7 @@ For more info see [Kubernetes reference](http://kubernetes.io/docs/user-guide/la
 * `resources` - (Required) A list of the minimum resources the volume should have. For more info see [Kubernetes reference](http://kubernetes.io/docs/user-guide/persistent-volumes#resources)
 * `selector` - (Optional) A label query over volumes to consider for binding.
 * `volume_name` - (Optional) The binding reference to the PersistentVolume backing this claim.
-* `storage_class_name` - (Optional) Name of the storage class requested by the claim
+* `storage_class_name` - (Optional) Name of the storage class requested by the claim. If this field is omitted, the system default will apply. If this field is set to empty string, no storage class will be applied.
 
 ### `match_expressions`
 
