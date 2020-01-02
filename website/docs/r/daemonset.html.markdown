@@ -153,6 +153,7 @@ For more info see [Kubernetes reference](http://kubernetes.io/docs/user-guide/an
 * `image_pull_secrets` - (Optional) ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. For more info see [Kubernetes reference](http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod)
 * `node_name` - (Optional) NodeName is a request to schedule this pod onto a specific node. If it is non-empty, the scheduler simply schedules this pod onto that node, assuming that it fits resource requirements.
 * `node_selector` - (Optional) NodeSelector is a selector which must be true for the pod to fit on a node. Selector which must match a node's labels for the pod to be scheduled on that node. For more info see [Kubernetes reference](http://kubernetes.io/docs/user-guide/node-selection).
+* `priority_class_name` - (Optional) If specified, indicates the pod's priority. 'system-node-critical' and 'system-cluster-critical' are two special keywords which indicate the highest priorities with the formerer being the highest priority. Any other name must be defined by creating a PriorityClass object with that name. If not specified, the pod priority will be default or zero if there is no default.
 * `restart_policy` - (Optional) Restart policy for all containers within the pod. One of Always, OnFailure, Never. For more info see [Kubernetes reference](http://kubernetes.io/docs/user-guide/pod-states#restartpolicy).
 * `security_context` - (Optional) SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty
 * `service_account_name` - (Optional) ServiceAccountName is the name of the ServiceAccount to use to run this pod. For more info see http://releases.k8s.io/HEAD/docs/design/service_accounts.md.
@@ -788,6 +789,7 @@ The `items` block supports the following:
 * `name` - (Required) This must match the Name of a Volume.
 * `read_only` - (Optional) Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false.
 * `sub_path` - (Optional) Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root).
+* `mount_propagation` - (Optional) Mount propagation mode. Defaults to "None". For more info see [Kubernetes reference](https://kubernetes.io/docs/concepts/storage/volumes/#mount-propagation)
 
 ### `vsphere_volume`
 
